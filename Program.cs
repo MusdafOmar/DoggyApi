@@ -1,72 +1,76 @@
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Service registration
+builder.Services.AddSingleton<ICryptoService, CryptoService>();
+
 var app = builder.Build();
-app.MapGet("/", () => "DoggyApi is running ✅ Try /dogs");
 
+// Health/status endpoint
+app.MapGet("/", () => "Crypto API is running ✅ Try POST /encrypt and POST /decrypt");
 
-// In-memory list (temporary "database")
-var dogs = new List<Dog>
+// POST /encrypt
+app.MapPost("/encrypt", (CryptoRequest request, ICryptoService crypto) =>
 {
-    new Dog(1, "Luna", "tax", false),
-    new Dog(2, "Laura", "tax", false),
-};
-
-// GET /dogs - get all dogs
-app.MapGet("/dogs", () => Results.Ok(dogs));
-
-// GET /dogs/{id} - get one dog
-app.MapGet("/dogs/{id:int}", (int id) =>
-{
-    var dog = dogs.FirstOrDefault(d => d.Id == id);
-    return dog is null ? Results.NotFound() : Results.Ok(dog);
+    var result = crypto.Encrypt(request.Text, request.Shift);
+    return Results.Ok(new CryptoResponse(result));
 });
 
-// POST /dogs - add a new dog
-app.MapPost("/dogs", ([FromBody] CreateDogDto dto) =>
+// POST /decrypt
+app.MapPost("/decrypt", (CryptoRequest request, ICryptoService crypto) =>
 {
-    var newId = dogs.Count == 0 ? 1 : dogs.Max(d => d.Id) + 1;
-
-    var newDog = new Dog(
-        newId,
-        dto.Name,
-        dto.Breed,
-        dto.Present
-    );
-
-    dogs.Add(newDog);
-
-    return Results.Created($"/dogs/{newId}", newDog);
-});
-
-// PATCH /dogs/{id} - update present (true/false)
-app.MapPatch("/dogs/{id:int}", (int id, [FromBody] UpdateDogPresentDto dto) =>
-{
-    var dog = dogs.FirstOrDefault(d => d.Id == id);
-    if (dog is null) return Results.NotFound();
-
-    var updatedDog = dog with { Present = dto.Present };
-
-    var index = dogs.FindIndex(d => d.Id == id);
-    dogs[index] = updatedDog;
-
-    return Results.Ok(updatedDog);
-});
-
-// DELETE /dogs/{id} - delete a dog
-app.MapDelete("/dogs/{id:int}", (int id) =>
-{
-    var dog = dogs.FirstOrDefault(d => d.Id == id);
-    if (dog is null) return Results.NotFound();
-
-    dogs.Remove(dog);
-    return Results.NoContent();
+    var result = crypto.Decrypt(request.Text, request.Shift);
+    return Results.Ok(new CryptoResponse(result));
 });
 
 app.Run();
 
-public record Dog(int Id, string Name, string Breed, bool Present);
 
-// DTOs (what client sends)
-public record CreateDogDto(string Name, string Breed, bool Present);
-public record UpdateDogPresentDto(bool Present);
+// ===== Models =====
+public record CryptoRequest(string Text, int Shift);
+public record CryptoResponse(string Result);
+
+
+// ===== Service =====
+public interface ICryptoService
+{
+    string Encrypt(string text, int shift);
+    string Decrypt(string text, int shift);
+}
+
+public class CryptoService : ICryptoService
+{
+    public string Encrypt(string text, int shift) => Caesar(text, shift);
+    public string Decrypt(string text, int shift) => Caesar(text, -shift);
+
+    private static string Caesar(string text, int shift)
+    {
+        if (string.IsNullOrEmpty(text)) return "";
+
+        shift %= 26;
+
+        char ShiftChar(char c, char a)
+        {
+            int offset = c - a;
+            int shifted = (offset + shift) % 26;
+            if (shifted < 0) shifted += 26;
+            return (char)(a + shifted);
+        }
+
+        var chars = text.ToCharArray();
+
+        for (int i = 0; i < chars.Length; i++)
+        {
+            var c = chars[i];
+
+            if (c >= 'a' && c <= 'z') chars[i] = ShiftChar(c, 'a');
+            else if (c >= 'A' && c <= 'Z') chars[i] = ShiftChar(c, 'A');
+            // else keep as-is (spaces, numbers, symbols)
+        }
+
+        return new string(chars);
+    }
+}
+
