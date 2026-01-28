@@ -7,4 +7,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+  <Compile Remove="DoggyApi.Tests\**\*.cs" />
+</ItemGroup>
+
+
 </Project>
