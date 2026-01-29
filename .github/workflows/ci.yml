@@ -1,9 +1,10 @@
-name: CI
+name: CI-CD
 
 on:
+  push:
+    branches: [ develop ]
   pull_request:
     branches: [ develop ]
-  push:
     branches: [ develop, main ]
 
 jobs:
@@ -31,26 +32,18 @@ jobs:
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Publish
-        run: dotnet publish -c Release -o publish
-
       - name: Deploy to Elastic Beanstalk
-        uses: einaregilsson/beanstalk-deploy@v22
+        uses: einaregilsson/beanstalk-deploy@v21
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: DoggyApi
+          application_name: DoggyCryptoApi
           environment_name: DoggyCryptoApi-env
           region: eu-north-1
-          deployment_package: publish
+          version_label: ${{ github.sha }}
+          deployment_package: .
