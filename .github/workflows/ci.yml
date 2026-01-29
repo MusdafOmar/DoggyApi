@@ -2,10 +2,12 @@ name: CI-CD
 
 on:
   push:
-    branches: [ develop ]
+    branches:
+      - develop
+      - main
   pull_request:
-    branches: [ develop ]
-    branches: [ develop, main ]
+    branches:
+      - develop
 
 jobs:
   build-and-test:
@@ -32,6 +34,7 @@ jobs:
   deploy:
     needs: build-and-test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
