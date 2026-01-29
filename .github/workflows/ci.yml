@@ -2,12 +2,9 @@ name: CI-CD
 
 on:
   push:
-    branches:
-      - develop
-      - main
+    branches: [ develop, main ]
   pull_request:
-    branches:
-      - develop
+    branches: [ develop ]
 
 jobs:
   build-and-test:
@@ -20,16 +17,16 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: "8.0.x"
 
       - name: Restore
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --no-restore -c Release
 
       - name: Test
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test --no-build -c Release --verbosity normal
 
   deploy:
     needs: build-and-test
@@ -40,6 +37,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish
+        run: dotnet publish -c Release -o publish
+
+      - name: Create deployment zip
+        run: |
+          cd publish
+          zip -r ../deploy.zip .
+          cd ..
+
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
         with:
@@ -49,4 +60,4 @@ jobs:
           environment_name: DoggyCryptoApi-env
           region: eu-north-1
           version_label: ${{ github.sha }}
-          deployment_package: .
+          deployment_package: deploy.zip
