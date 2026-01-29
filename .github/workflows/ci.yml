@@ -1,10 +1,11 @@
-name: CI
+name: CI-CD
 
 on:
-  pull_request:
-    branches: [ develop ]
   push:
     branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+    branches: [ develop, main ]
 
 jobs:
   build-and-test:
@@ -27,3 +28,22 @@ jobs:
 
       - name: Test
         run: dotnet test --no-build --verbosity normal
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v21
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: DoggyCryptoApi
+          environment_name: DoggyCryptoApi-env
+          region: eu-north-1
+          version_label: ${{ github.sha }}
+          deployment_package: .
