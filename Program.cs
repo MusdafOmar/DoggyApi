@@ -2,6 +2,13 @@ using DoggyApi.Models;
 using DoggyApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+// Elastic Beanstalk sets PORT (example: 5000). Locally you might use 5047/https etc.
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+}
+
 
 // Register services
 builder.Services.AddSingleton<ICryptoService, CryptoService>();
