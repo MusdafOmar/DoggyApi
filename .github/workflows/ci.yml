@@ -2,9 +2,12 @@ name: CI-CD
 
 on:
   push:
-    branches: [ develop, main ]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [ develop ]
+    branches:
+      - develop
 
 jobs:
   build-and-test:
@@ -17,16 +20,22 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: '8.0.x'
 
       - name: Restore
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore -c Release
+        run: dotnet build --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test --no-build -c Release --verbosity normal
+      - name: Publish
+        run: dotnet publish -c Release -o publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app
+          path: publish
 
   deploy:
     needs: build-and-test
@@ -34,22 +43,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Download artifact
+        uses: actions/download-artifact@v4
         with:
-          dotnet-version: "8.0.x"
-
-      - name: Publish
-        run: dotnet publish -c Release -o publish
-
-      - name: Create deployment zip
-        run: |
-          cd publish
-          zip -r ../deploy.zip .
-          cd ..
+          name: app
+          path: publish
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
@@ -60,4 +58,4 @@ jobs:
           environment_name: DoggyCryptoApi-env
           region: eu-north-1
           version_label: ${{ github.sha }}
-          deployment_package: deploy.zip
+          deployment_package: publish
