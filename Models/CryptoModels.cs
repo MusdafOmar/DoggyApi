@@ -1,5 +1,8 @@
-namespace DoggyApi.Models;
-
-public record CryptoRequest(string Text, int Shift);
-public record CryptoResponse(string Result);
-
+namespace DoggyApi.Models
+{
+    public class EncryptRequest
+    {
+        public string Text { get; set; } = string.Empty;
+        public int Shift { get; set; }
+    }
+}

@@ -10,4 +10,8 @@
     <Compile Remove="DoggyApi.Tests/**/*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+  </ItemGroup>
+
 </Project>
