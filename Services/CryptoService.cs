@@ -1,38 +1,44 @@
-namespace DoggyApi.Services;
-
-public interface ICryptoService
+namespace DoggyApi.Services
 {
-    string Encrypt(string text, int shift);
-    string Decrypt(string text, int shift);
-}
-
-public class CryptoService : ICryptoService
-{
-    public string Encrypt(string text, int shift)
-        => Caesar(text, shift);
-
-    public string Decrypt(string text, int shift)
-        => Caesar(text, -shift);
-
-    private static string Caesar(string text, int shift)
+    public interface ICryptoService
     {
-        if (string.IsNullOrEmpty(text))
-            return string.Empty;
+        string Encrypt(string text, int shift);
+        string Decrypt(string text, int shift);
+    }
 
-        shift %= 26;
-        char Shift(char c, char a)
-            => (char)(a + (c - a + shift + 26) % 26);
+    public class CryptoService : ICryptoService
+    {
+        public string Encrypt(string text, int shift) => Caesar(text, shift);
 
-        var chars = text.ToCharArray();
+        public string Decrypt(string text, int shift) => Caesar(text, -shift);
 
-        for (int i = 0; i < chars.Length; i++)
+        private static string Caesar(string input, int shift)
         {
-            if (chars[i] >= 'a' && chars[i] <= 'z')
-                chars[i] = Shift(chars[i], 'a');
-            else if (chars[i] >= 'A' && chars[i] <= 'Z')
-                chars[i] = Shift(chars[i], 'A');
-        }
+            if (string.IsNullOrEmpty(input)) return input;
 
-        return new string(chars);
+            shift = shift % 26;
+
+            char ShiftChar(char c, char baseChar)
+            {
+                int offset = c - baseChar;
+                int newOffset = (offset + shift) % 26;
+                if (newOffset < 0) newOffset += 26;
+                return (char)(baseChar + newOffset);
+            }
+
+            var chars = input.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                char c = chars[i];
+
+                if (c >= 'A' && c <= 'Z')
+                    chars[i] = ShiftChar(c, 'A');
+                else if (c >= 'a' && c <= 'z')
+                    chars[i] = ShiftChar(c, 'a');
+                // else: keep spaces, numbers, symbols unchanged
+            }
+
+            return new string(chars);
+        }
     }
 }

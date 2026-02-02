@@ -1,35 +1,30 @@
-using DoggyApi.Models;
 using DoggyApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-// Elastic Beanstalk sets PORT (example: 5000). Locally you might use 5047/https etc.
-var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrEmpty(port))
-{
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-}
 
+// Controllers
+builder.Services.AddControllers();
 
-// Register services
-builder.Services.AddSingleton<ICryptoService, CryptoService>();
+// Your service
+builder.Services.AddScoped<CryptoService>();
+
+// Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Health/status endpoint
-app.MapGet("/", () => "DoggyApi is running ✅ Try POST /encrypt and POST /decrypt");
-
-// POST /encrypt
-app.MapPost("/encrypt", (CryptoRequest request, ICryptoService crypto) =>
+// Swagger middleware (Development only)
+if (app.Environment.IsDevelopment())
 {
-    var result = crypto.Encrypt(request.Text, request.Shift);
-    return Results.Ok(new CryptoResponse(result));
-});
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-// POST /decrypt
-app.MapPost("/decrypt", (CryptoRequest request, ICryptoService crypto) =>
-{
-    var result = crypto.Decrypt(request.Text, request.Shift);
-    return Results.Ok(new CryptoResponse(result));
-});
+app.UseHttpsRedirection();
+
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
